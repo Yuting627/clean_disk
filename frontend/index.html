@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>C 盘清理 - 预览与清理</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0f1216;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --accent: #f59e0b;
+      --accent-hover: #fbbf24;
+      --danger: #dc2626;
+      --danger-hover: #ef4444;
+      --success: #16a34a;
+      --radius: 8px;
+      --font-sans: "Noto Sans SC", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", monospace;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .layout {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .summary {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .summary-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      min-width: 140px;
+    }
+    .summary-card .label { color: var(--text-muted); font-size: 12px; }
+    .summary-card .value { font-weight: 600; font-family: var(--font-mono); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border: none;
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.05s;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary {
+      background: var(--accent);
+      color: #111;
+    }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-danger {
+      background: var(--danger);
+      color: #fff;
+    }
+    .btn-danger:hover { background: var(--danger-hover); }
+    .btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { color: var(--text); background: var(--surface); }
+    .category-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .category-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: rgba(0,0,0,0.2);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      user-select: none;
+    }
+    .category-header:hover { background: rgba(0,0,0,0.3); }
+    .category-header input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .category-header .name {
+      font-weight: 600;
+      text-transform: capitalize;
+    }
+    .category-header .meta {
+      color: var(--text-muted);
+      font-size: 12px;
+      margin-left: auto;
+    }
+    .file-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .file-table th {
+      text-align: left;
+      padding: 10px 16px;
+      font-weight: 500;
+      color: var(--text-muted);
+      font-size: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .file-table th:first-child { width: 42px; }
+    .file-table th:nth-child(2) { width: 90px; }
+    .file-table td {
+      padding: 8px 16px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .file-table tr:last-child td { border-bottom: none; }
+    .file-table tr:hover td { background: rgba(255,255,255,0.03); }
+    .file-table input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .file-table .size {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .file-table .path-link {
+      color: var(--accent);
+      text-decoration: none;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      word-break: break-all;
+      cursor: pointer;
+    }
+    .file-table .path-link:hover { text-decoration: underline; }
+    .file-table .path-cell { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .file-warning {
+      font-size: 11px;
+      color: var(--danger);
+      background: rgba(220, 38, 38, 0.15);
+      padding: 2px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .state-empty, .state-loading, .state-error {
+      padding: 48px 24px;
+      text-align: center;
+      color: var(--text-muted);
+    }
+    .state-error { color: var(--danger); }
+    .state-error code { background: var(--surface); padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono); font-size: 12px; }
+    .wechat-diagnostic .diagnostic-body { padding: 16px; font-size: 13px; color: var(--text-muted); }
+    .wechat-diagnostic .diagnostic-body p { margin: 8px 0; }
+    .wechat-diagnostic .diagnostic-body code { background: var(--surface); padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono); font-size: 12px; color: var(--accent); }
+    .wechat-diagnostic .path-list { margin-top: 8px; max-height: 200px; overflow: auto; font-family: var(--font-mono); font-size: 11px; line-height: 1.6; }
+    .wechat-diagnostic .hint { color: var(--accent); margin-top: 12px; }
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 12px 20px;
+      border-radius: var(--radius);
+      font-weight: 500;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      z-index: 1000;
+      animation: fadeIn 0.2s ease;
+    }
+    .toast.success { background: var(--success); color: #fff; }
+    .toast.error { background: var(--danger); color: #fff; }
+    .toast.info { background: var(--surface); border: 1px solid var(--border); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .actions-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <header>
+      <h1>C 盘清理</h1>
+      <div class="actions-row">
+        <button type="button" class="btn btn-primary" id="btn-scan">
+          扫描 C 盘
+        </button>
+        <button type="button" class="btn btn-danger" id="btn-delete" disabled>
+          删除选中
+        </button>
+        <button type="button" class="btn btn-ghost" id="btn-delete-admin" disabled style="display: none;">
+          管理员权限删除
+        </button>
+      </div>
+    </header>
+
+    <div id="summary" class="summary" style="display: none;"></div>
+    <div id="content"></div>
+  </div>
+
+  <script>
+    // 通过后端访问时用当前域名，直接打开 HTML 时用本地服务
+    const API = (window.location.protocol === "http:" || window.location.protocol === "https:")
+      ? window.location.origin
+      : "http://127.0.0.1:8000";
+    const contentEl = document.getElementById("content");
+    const summaryEl = document.getElementById("summary");
+    const btnScan = document.getElementById("btn-scan");
+    const btnDelete = document.getElementById("btn-delete");
+    const btnDeleteAdmin = document.getElementById("btn-delete-admin");
+
+    let currentData = null;
+    let lastDeleteErrorPaths = [];
+
+    const CATEGORY_NAMES = {
+      temp: "临时文件",
+      cache: "缓存",
+      logs: "日志",
+      remnants: "已卸载软件残余",
+      large: "大文件",
+      wechat_files: "微信传输文件",
+      wechat_cache: "微信聊天缓存"
+    };
+
+    function toast(msg, type = "info") {
+      const el = document.createElement("div");
+      el.className = "toast " + type;
+      el.textContent = msg;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3500);
+    }
+
+    function formatSize(bytes) {
+      if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(2) + " GB";
+      if (bytes >= 1048576) return (bytes / 1048576).toFixed(2) + " MB";
+      if (bytes >= 1024) return (bytes / 1024).toFixed(2) + " KB";
+      return bytes + " B";
+    }
+    function esc(s) {
+      if (!s) return "";
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function renderEmpty() {
+      contentEl.innerHTML = '<div class="state-empty">点击「扫描 C 盘」开始分析可清理文件</div>';
+      summaryEl.style.display = "none";
+    }
+
+    function setLoading(loading) {
+      btnScan.disabled = loading;
+      if (loading) {
+        contentEl.innerHTML = '<div class="state-loading">正在扫描 C 盘，请稍候…</div>';
+        summaryEl.style.display = "none";
+      }
+    }
+
+    function openInExplorer(path) {
+      fetch(API + "/api/open-path", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path })
+      })
+        .then(r => r.ok ? toast("已在资源管理器中打开", "success") : r.json().then(d => toast(d.detail || "打开失败", "error")))
+        .catch(() => toast("打开失败", "error"));
+    }
+
+    function bindCategoryCheckbox(cat, list) {
+      const headerCheck = document.querySelector(`[data-category="${cat}"] .category-header input[type="checkbox"]`);
+      const fileChecks = document.querySelectorAll(`[data-category="${cat}"] .file-table input[type="checkbox"]`);
+      if (!headerCheck) return;
+      headerCheck.addEventListener("change", () => {
+        fileChecks.forEach(cb => { cb.checked = headerCheck.checked; });
+        updateDeleteButton();
+      });
+      fileChecks.forEach(cb => cb.addEventListener("change", updateDeleteButton));
+    }
+
+    function updateDeleteButton() {
+      const n = document.querySelectorAll(".file-table input[type='checkbox']:checked").length;
+      btnDelete.disabled = n === 0;
+      btnDelete.textContent = n > 0 ? `删除选中 (${n})` : "删除选中";
+      if (lastDeleteErrorPaths.length > 0) {
+        btnDeleteAdmin.style.display = "inline-flex";
+        btnDeleteAdmin.disabled = false;
+        btnDeleteAdmin.textContent = `管理员权限删除 (${lastDeleteErrorPaths.length})`;
+      } else {
+        btnDeleteAdmin.style.display = "none";
+        btnDeleteAdmin.disabled = true;
+      }
+    }
+
+    function render(data, warningPaths) {
+      warningPaths = warningPaths || new Set();
+      const { categories, summary: sum } = data;
+      if (!categories || Object.keys(categories).length === 0) {
+        contentEl.innerHTML = '<div class="state-empty">未发现可清理文件</div>';
+        summaryEl.style.display = "none";
+        return;
+      }
+
+      summaryEl.style.display = "flex";
+      summaryEl.innerHTML = `
+        <div class="summary-card"><span class="label">可释放</span><div class="value">${formatSize(sum.total_size_bytes)}</div></div>
+        <div class="summary-card"><span class="label">文件数</span><div class="value">${sum.total_count}</div></div>
+      `;
+
+      let html = "";
+      for (const [cat, items] of Object.entries(categories)) {
+        const name = CATEGORY_NAMES[cat] || cat;
+        const catSize = items.reduce((a, f) => a + f.size, 0);
+        const hint = cat === "remnants"
+          ? " <span class=\"meta\" style=\"font-weight:normal\">（与注册表已安装列表对比，可能为残留目录，请确认后删除）</span>"
+          : cat === "large"
+            ? " <span class=\"meta\" style=\"font-weight:normal\">（文档/下载/桌面等与软件系统无关，≥50MB，可按需删除）</span>"
+            : cat === "wechat_files"
+              ? " <span class=\"meta\" style=\"font-weight:normal\">（FileStorage，聊天中收发的文件）</span>"
+              : cat === "wechat_cache"
+                ? " <span class=\"meta\" style=\"font-weight:normal\">（图片/视频/表情等缓存，删除不影响聊天记录）</span>"
+                : "";
+        html += `
+          <div class="category-block" data-category="${cat}">
+            <div class="category-header">
+              <input type="checkbox" aria-label="全选${name}" />
+              <span class="name">${name}</span>${hint}
+              <span class="meta">${items.length} 项 · ${formatSize(catSize)}</span>
+            </div>
+            <table class="file-table">
+              <thead><tr><th></th><th>大小</th><th>路径</th></tr></thead>
+              <tbody>
+                ${items.map(f => {
+                  const warn = warningPaths.has(f.path);
+                  return `
+                  <tr>
+                    <td><input type="checkbox" data-path="${esc(f.path)}" /></td>
+                    <td class="size">${formatSize(f.size)}</td>
+                    <td class="path-cell">
+                      <a class="path-link" href="#" data-path="${esc(f.path)}">${esc(f.path)}</a>
+                      ${warn ? '<span class="file-warning">可能被占用，可用管理员权限删除</span>' : ''}
+                    </td>
+                  </tr>
+                `; }).join("")}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+      contentEl.innerHTML = html;
+
+      Object.keys(categories).forEach(cat => bindCategoryCheckbox(cat));
+      contentEl.querySelectorAll(".path-link").forEach(a => {
+        a.addEventListener("click", e => {
+          e.preventDefault();
+          openInExplorer(a.getAttribute("data-path"));
+        });
+      });
+      updateDeleteButton();
+
+      const wechatCount = (categories.wechat_files || []).length + (categories.wechat_cache || []).length;
+      if (wechatCount === 0) {
+        fetch(API + "/api/wechat-diagnostic")
+          .then(r => r.json())
+          .then(d => {
+            if (d.error) return;
+            const block = document.createElement("div");
+            block.className = "category-block wechat-diagnostic";
+            const reg = d.registry_path ? `注册表 FileSavePath：<code>${esc(d.registry_path)}</code>` : "注册表 FileSavePath：未设置或无法读取";
+            const found = (d.base_paths_found || []).length;
+            const list = (d.checked_paths || []).slice(0, 30).map(p => `${p.exists ? "✓" : "✗"} ${esc(p.path)}`).join("<br>");
+            block.innerHTML = `
+              <div class="category-header">
+                <span class="name">微信存储路径诊断</span>
+                <span class="meta">未检测到微信传输文件/缓存时可参考</span>
+              </div>
+              <div class="diagnostic-body">
+                <p><strong>${reg}</strong></p>
+                <p>已检查的路径中，存在且为目录的共 <strong>${found}</strong> 个。</p>
+                <p>请打开微信 → 设置 → 文件管理，查看「文件存储」显示的路径是否在下列列表中。</p>
+                <details>
+                  <summary>已检查的路径列表（前30项）</summary>
+                  <div class="path-list">${list}</div>
+                </details>
+                <p class="hint">若您的微信实际路径不在列表中，请将微信里显示的完整路径反馈以便支持。</p>
+              </div>
+            `;
+            contentEl.appendChild(block);
+          })
+          .catch(() => {});
+      }
+    }
+
+    btnScan.addEventListener("click", () => {
+      setLoading(true);
+      fetch(API + "/api/scan")
+        .then(r => r.json())
+        .then(data => {
+          setLoading(false);
+          currentData = data;
+          lastDeleteErrorPaths = [];
+          if (data.categories) render(data, new Set(lastDeleteErrorPaths));
+          else renderEmpty();
+        })
+        .catch(err => {
+          setLoading(false);
+          contentEl.innerHTML = '<div class="state-error">扫描失败，请确认：<br>1. 已在项目目录运行：<code>uvicorn backend.main:app --reload --port 8000</code><br>2. 在浏览器访问 <a href="http://127.0.0.1:8000/" style="color:var(--accent)">http://127.0.0.1:8000/</a> 打开本页面<br><br>错误信息：' + (err.message || "无法连接") + '</div>';
+        });
+    });
+
+    btnDelete.addEventListener("click", () => {
+      const paths = Array.from(document.querySelectorAll(".file-table input[type='checkbox']:checked"))
+        .map(cb => cb.getAttribute("data-path"));
+      if (paths.length === 0) return;
+      if (!confirm(`确定要删除选中的 ${paths.length} 个文件吗？此操作不可恢复。`)) return;
+      btnDelete.disabled = true;
+      fetch(API + "/api/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paths })
+      })
+        .then(r => r.json().then(data => ({ ok: r.ok, data })))
+        .then(({ ok, data: res }) => {
+          if (!ok) {
+            toast(res.detail || "删除请求失败", "error");
+            updateDeleteButton();
+            return;
+          }
+          const n = (res.deleted || []).length;
+          const errs = (res.errors || []);
+          const skip = (res.skipped || []);
+          if (n) toast(`已删除 ${n} 个文件`, "success");
+          if (errs.length) {
+            lastDeleteErrorPaths = errs.map(e => e.path);
+            if (currentData) render(currentData, new Set(lastDeleteErrorPaths));
+            const msg = errs[0].reason || "权限不足";
+            toast(`${errs.length} 个失败：${msg}${errs.length > 1 ? " …" : ""}`, "error");
+          } else {
+            lastDeleteErrorPaths = [];
+          }
+          if (skip.length && !n) {
+            const msg = skip[0].reason || "被跳过";
+            toast(`${skip.length} 个未删除：${msg}${skip.length > 1 ? " …" : ""}`, "info");
+          }
+          updateDeleteButton();
+          if (lastDeleteErrorPaths.length === 0) btnScan.click();
+        })
+        .catch(() => {
+          toast("删除请求失败（请检查网络或后端）", "error");
+          updateDeleteButton();
+        });
+    });
+
+    btnDeleteAdmin.addEventListener("click", () => {
+      if (lastDeleteErrorPaths.length === 0) return;
+      if (!confirm(`将以管理员权限删除 ${lastDeleteErrorPaths.length} 个文件，会弹出 UAC 确认。继续？`)) return;
+      btnDeleteAdmin.disabled = true;
+      fetch(API + "/api/delete-admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paths: lastDeleteErrorPaths })
+      })
+        .then(r => r.json().then(data => ({ ok: r.ok, data })))
+        .then(({ ok, data: res }) => {
+          if (!ok) {
+            toast(res.detail || "管理员删除请求失败", "error");
+            updateDeleteButton();
+            return;
+          }
+          const n = (res.deleted || []).length;
+          const errs = (res.errors || []);
+          if (n) toast(`已删除 ${n} 个文件`, "success");
+          lastDeleteErrorPaths = errs.map(e => e.path);
+          if (currentData) render(currentData, new Set(lastDeleteErrorPaths));
+          updateDeleteButton();
+          if (lastDeleteErrorPaths.length === 0) btnScan.click();
+        })
+        .catch(() => {
+          toast("管理员删除请求失败", "error");
+          updateDeleteButton();
+        });
+    });
+
+    renderEmpty();
+  </script>
+</body>
+</html>
