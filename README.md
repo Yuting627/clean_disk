@@ -18,7 +18,7 @@ pip install -r requirements.txt
 uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-浏览器访问：http://localhost:8000/
+**在浏览器地址栏输入** http://localhost:8000/ 或 http://127.0.0.1:8000/ 打开页面（不要直接双击 `frontend/index.html`，否则会出现「Failed to fetch」）。
 
 ## 结构
 

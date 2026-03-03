@@ -21,6 +21,8 @@ _last_remnant_paths: set[str] = set()
 _last_large_file_paths: set[str] = set()
 # 上次扫描得到的「微信」目录路径（传输文件/聊天缓存，用于允许删除整目录）
 _last_wechat_paths: set[str] = set()
+# 上次扫描得到的空文件夹路径（仅允许删除这些）
+_last_empty_folder_paths: set[str] = set()
 
 app = FastAPI(title="C 盘清理", version="1.0.0")
 app.add_middleware(
@@ -79,6 +81,8 @@ def _is_path_allowed(path: str) -> bool:
     if path_norm in _last_large_file_paths:
         return True
     if path_norm in _last_wechat_paths:
+        return True
+    if path_norm in _last_empty_folder_paths:
         return True
     return False
 
@@ -313,6 +317,53 @@ def api_wechat_diagnostic():
         return get_wechat_diagnostic()
     except Exception as e:
         return {"error": str(e), "checked_paths": [], "base_paths_found": [], "scan_result_count": 0}
+
+
+@app.get("/api/scan-empty-folders")
+def api_scan_empty_folders():
+    """扫描可安全清理的空文件夹（仅 Temp、缓存、日志等目录）。"""
+    global _last_empty_folder_paths
+    try:
+        from backend.empty_folders import scan_empty_folders
+        paths = scan_empty_folders(max_total=3000)
+        _last_empty_folder_paths = {_normalize_path_for_check(p) for p in paths}
+        return {"paths": paths, "count": len(paths)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/delete-empty-folders")
+def api_delete_empty_folders(body: DeleteRequest):
+    """删除选中的空文件夹（仅允许删除本次扫描结果中的、且仍为空的目录）。"""
+    if not body.paths:
+        return {"deleted": [], "skipped": [], "errors": []}
+    deleted = []
+    skipped = []
+    errors = []
+    for raw in body.paths:
+        path = raw.strip()
+        if not path:
+            continue
+        try:
+            p = Path(path)
+            if not p.exists():
+                errors.append({"path": path, "reason": "路径不存在"})
+                continue
+            if not p.is_dir():
+                skipped.append({"path": path, "reason": "不是目录"})
+                continue
+            path_norm = _normalize_path_for_check(str(p.resolve()))
+            if path_norm not in _last_empty_folder_paths:
+                skipped.append({"path": path, "reason": "不在本次扫描的空文件夹列表中"})
+                continue
+            try:
+                p.rmdir()
+                deleted.append(path)
+            except OSError as e:
+                errors.append({"path": path, "reason": f"删除失败（可能非空或权限不足）: {e}"})
+        except Exception as e:
+            errors.append({"path": path, "reason": str(e)})
+    return {"deleted": deleted, "skipped": skipped, "errors": errors}
 
 
 @app.get("/api/health")
