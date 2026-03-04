@@ -45,11 +45,14 @@ else:
         return False
 
     def _get_user_large_roots() -> list[Path]:
-        """用户目录：文档、下载、桌面、视频、音乐、图片等（与软件/系统无关）。"""
+        """用户目录：文档、下载、视频、音乐、图片等（与软件/系统无关）。
+        明确排除 Desktop、Favorites，避免清理影响桌面显示或收藏夹。
+        """
         roots = []
         user_profile = os.environ.get("USERPROFILE") or os.path.expanduser("~")
         base = Path(user_profile)
-        names = ("Documents", "Downloads", "Desktop", "Videos", "Music", "Pictures", "OneDrive", "Favorites")
+        # 不包含 Desktop、Favorites，防止影响桌面显示和收藏夹
+        names = ("Documents", "Downloads", "Videos", "Music", "Pictures", "OneDrive")
         for name in names:
             d = base / name
             if d.exists() and d.is_dir():

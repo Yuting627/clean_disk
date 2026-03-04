@@ -10,11 +10,12 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import Iterator
 
-# 保护的后缀，绝不删除
+# 保护的后缀，绝不删除（含快捷方式，避免影响桌面/收藏夹显示）
 PROTECTED_EXTENSIONS = {
     ".exe", ".dll", ".sys", ".drv", ".bat", ".cmd", ".ps1",
     ".sh", ".bash", ".zsh", ".app", ".dmg", ".pkg", ".deb",
     ".rpm", ".msi", ".iso", ".vhd", ".vhdx",
+    ".lnk", ".url",
 }
 
 

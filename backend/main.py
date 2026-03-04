@@ -44,7 +44,14 @@ if _frontend_dir.exists():
 def index():
     idx = _frontend_dir / "index.html"
     if idx.exists():
-        return FileResponse(idx)
+        return FileResponse(
+            idx,
+            headers={
+                "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+                "Pragma": "no-cache",
+                "Expires": "0",
+            },
+        )
     return {"message": "C 盘清理 API", "docs": "/docs"}
 
 
@@ -69,6 +76,36 @@ def _normalize_path_for_check(path: str) -> str:
     if os.name == "nt" and s.startswith("\\\\?\\"):
         s = s[4:]
     return s
+
+
+def _get_forbidden_delete_prefixes() -> set[str]:
+    """不允许删除的路径前缀（桌面、收藏夹、壁纸/主题等），避免影响桌面显示与壁纸。"""
+    if os.name != "nt":
+        return set()
+    prefixes = set()
+    user_profile = os.environ.get("USERPROFILE") or os.path.expanduser("~")
+    if user_profile:
+        base = _normalize_path_for_check(str(Path(user_profile).resolve()))
+        for name in ("desktop", "favorites", "桌面"):
+            prefixes.add(base + os.sep + name)
+    # Windows 壁纸与主题目录（TranscodedWallpaper 等），删除会导致壁纸黑屏
+    for env_name, subpath in (
+        ("APPDATA", os.path.join("microsoft", "windows", "themes")),
+        ("LOCALAPPDATA", os.path.join("microsoft", "windows", "themes")),
+    ):
+        val = os.environ.get(env_name)
+        if val:
+            p = _normalize_path_for_check(str((Path(val) / subpath).resolve()))
+            prefixes.add(p)
+    return prefixes
+
+
+def _is_under_forbidden(path_norm: str) -> bool:
+    """路径是否在禁止删除的目录下（桌面、收藏夹等）。"""
+    for prefix in _get_forbidden_delete_prefixes():
+        if path_norm == prefix or path_norm.startswith(prefix + os.sep):
+            return True
+    return False
 
 
 def _is_path_allowed(path: str) -> bool:
@@ -149,6 +186,10 @@ def api_delete(body: DeleteRequest):
                 continue
             path_abs = str(p.resolve())
             path_norm = _normalize_path_for_check(path_abs)
+            # 禁止删除桌面、收藏夹下的内容，避免影响桌面显示
+            if _is_under_forbidden(path_norm):
+                skipped.append({"path": path, "reason": "不允许删除桌面或收藏夹中的文件"})
+                continue
             # 允许：在 temp/cache/logs 下的文件、本次扫描的残余目录、本次扫描的大文件、或本次扫描的微信目录
             in_roots = any(path_norm == r or path_norm.startswith(r + os.sep) for r in allowed_roots)
             is_remnant_dir = path_norm in _last_remnant_paths and p.is_dir()
@@ -192,6 +233,8 @@ def _run_delete_as_admin_windows(paths: list[str], allowed_roots: set[str]) -> t
             continue
         path_abs = str(p.resolve())
         path_norm = _normalize_path_for_check(path_abs)
+        if _is_under_forbidden(path_norm):
+            continue
         if p.is_file():
             if not any(path_norm == r or path_norm.startswith(r + os.sep) for r in allowed_roots):
                 if path_norm not in _last_large_file_paths:

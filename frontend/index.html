@@ -4,110 +4,220 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>C 盘清理 - 预览与清理</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['"Microsoft YaHei"', '"微软雅黑"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-            mono: ['ui-monospace', 'monospace'],
-          },
-          colors: {
-            border: 'hsl(215 20% 25%)',
-            input: 'hsl(215 20% 25%)',
-            ring: '#7C2AE8',
-            background: 'hsl(222 47% 8%)',
-            foreground: 'hsl(210 40% 98%)',
-            primary: {
-              DEFAULT: '#7C2AE8',
-              foreground: '#ffffff',
-            },
-            secondary: {
-              DEFAULT: 'hsl(215 25% 18%)',
-              foreground: 'hsl(210 40% 98%)',
-            },
-            destructive: {
-              DEFAULT: 'hsl(0 72% 45%)',
-              foreground: 'hsl(0 0% 100%)',
-            },
-            muted: {
-              DEFAULT: 'hsl(215 25% 18%)',
-              foreground: 'hsl(215 20% 55%)',
-            },
-            accent: {
-              DEFAULT: '#A3E635',
-              foreground: '#0a0a0a',
-            },
-            card: {
-              DEFAULT: 'hsl(222 35% 12%)',
-              foreground: 'hsl(210 40% 98%)',
-            },
-          },
-          borderRadius: {
-            lg: '0.75rem',
-            md: '0.5rem',
-            sm: '0.375rem',
-          },
-          boxShadow: {
-            'card': '0 1px 3px 0 rgb(0 0 0 / 0.2), 0 1px 2px -1px rgb(0 0 0 / 0.2)',
-            'card-hover': '0 4px 6px -1px rgb(0 0 0 / 0.25), 0 2px 4px -2px rgb(0 0 0 / 0.2)',
-          },
-        },
-      },
-    };
-  </script>
-  <style type="text/tailwindcss">
-    @layer utilities {
-      .touch-target {
-        min-height: 44px;
-        min-width: 44px;
-      }
-    }
-  </style>
   <style>
-    body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-    .toast { animation: toast-in 0.25s ease; }
+    :root {
+      --border: hsl(215, 20%, 25%);
+      --bg: hsl(222, 47%, 8%);
+      --foreground: hsl(210, 40%, 98%);
+      --primary: #7C2AE8;
+      --primary-fg: #ffffff;
+      --secondary: hsl(215, 25%, 18%);
+      --secondary-fg: hsl(210, 40%, 98%);
+      --destructive: hsl(0, 72%, 45%);
+      --destructive-fg: #fff;
+      --muted: hsl(215, 25%, 18%);
+      --muted-fg: hsl(215, 20%, 55%);
+      --accent: #A3E635;
+      --accent-fg: #0a0a0a;
+      --card: hsl(222, 35%, 12%);
+      --card-fg: hsl(210, 40%, 98%);
+      --radius: 0.5rem;
+      --radius-lg: 0.75rem;
+      --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.2), 0 1px 2px -1px rgb(0 0 0 / 0.2);
+      --font-sans: "Microsoft YaHei", "微软雅黑", ui-sans-serif, system-ui, sans-serif;
+      --font-mono: ui-monospace, monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--foreground);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    .layout { max-width: 56rem; margin: 0 auto; padding: 1.25rem 1.5rem; }
+    header {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+    @media (min-width: 640px) {
+      header { flex-direction: row; align-items: center; justify-content: space-between; }
+    }
+    h1 { margin: 0; font-size: 1.25rem; font-weight: 600; letter-spacing: -0.02em; }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1rem;
+      border: none;
+      border-radius: var(--radius-lg);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.05s;
+      min-height: 44px;
+      min-width: 44px;
+    }
+    .btn:active:not(:disabled) { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-accent { background: var(--accent); color: var(--accent-fg); box-shadow: var(--shadow); }
+    .btn-accent:hover:not(:disabled) { filter: brightness(0.95); }
+    .btn-primary { background: color-mix(in srgb, var(--primary) 90%, transparent); color: var(--primary-fg); border: 1px solid color-mix(in srgb, var(--primary) 50%, transparent); }
+    .btn-primary:hover:not(:disabled) { background: var(--primary); }
+    .btn-destructive { background: var(--destructive); color: var(--destructive-fg); box-shadow: var(--shadow); }
+    .btn-destructive:hover:not(:disabled) { filter: brightness(1.1); }
+    .summary { display: none; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem; }
+    .summary.show { display: flex; }
+    .summary-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 0.75rem 1rem;
+      min-width: 140px;
+      box-shadow: var(--shadow);
+    }
+    .summary-card .label { font-size: 12px; color: var(--muted-fg); }
+    .summary-card .value { font-size: 1rem; font-weight: 600; font-family: var(--font-mono); }
+    .category-block {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      margin-bottom: 1rem;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .category-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: color-mix(in srgb, var(--secondary) 50%, transparent);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      user-select: none;
+      list-style: none;
+    }
+    .category-header:hover { background: color-mix(in srgb, var(--secondary) 70%, transparent); }
+    .category-header .toggle {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: var(--muted-fg);
+      transition: transform 0.15s ease;
+    }
+    .category-header .toggle::before { content: '▼'; }
+    .category-block.collapsed .category-header .toggle::before { content: '▶'; }
+    .category-body { overflow-x: auto; }
+    .category-block.collapsed .category-body { display: none; }
+    .category-header input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--primary); flex-shrink: 0; }
+    .category-header .name { font-weight: 600; }
+    .category-header .meta { margin-left: auto; font-size: 12px; color: var(--muted-fg); white-space: nowrap; }
+    .file-table { width: 100%; border-collapse: collapse; }
+    .file-table th { text-align: left; padding: 0.5rem 1rem; font-weight: 500; font-size: 12px; color: var(--muted-fg); border-bottom: 1px solid var(--border); }
+    .file-table th:first-child { width: 42px; }
+    .file-table th:nth-child(2) { width: 90px; }
+    .file-table td { padding: 0.5rem 1rem; border-bottom: 1px solid color-mix(in srgb, var(--border) 80%, transparent); vertical-align: middle; }
+    .file-table tr:last-child td { border-bottom: none; }
+    .file-table tr:hover td { background: color-mix(in srgb, var(--secondary) 30%, transparent); }
+    .file-table input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--primary); }
+    .file-table .size { font-family: var(--font-mono); font-size: 12px; color: var(--muted-fg); }
+    .path-link { color: var(--accent); text-decoration: none; font-family: var(--font-mono); font-size: 12px; word-break: break-all; cursor: pointer; }
+    .path-link:hover { text-decoration: underline; }
+    .file-warning { font-size: 11px; color: var(--destructive); background: color-mix(in srgb, var(--destructive) 15%, transparent); padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
+    .state-empty, .state-loading, .state-error { padding: 3rem 1.5rem; text-align: center; border-radius: var(--radius-lg); border: 1px solid var(--border); background: var(--card); }
+    .state-empty, .state-loading { color: var(--muted-fg); }
+    .state-error { color: var(--destructive); }
+    .state-error code, .state-error .code { background: var(--secondary); padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono); font-size: 12px; }
+    .empty-section { margin-top: 1.5rem; }
+    .empty-section.hidden { display: none; }
+    .empty-folders-list { max-height: 16rem; overflow: auto; }
+    .empty-folders-list .row { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 1rem; border-bottom: 1px solid color-mix(in srgb, var(--border) 80%, transparent); }
+    .empty-folders-list .row:hover { background: color-mix(in srgb, var(--secondary) 30%, transparent); }
+    .empty-folders-list input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--primary); flex-shrink: 0; }
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-lg);
+      font-weight: 500;
+      font-size: 14px;
+      box-shadow: var(--shadow);
+      z-index: 1000;
+      animation: toast-in 0.25s ease;
+    }
+    .toast.success { background: #059669; color: #fff; }
+    .toast.error { background: var(--destructive); color: #fff; }
+    .toast.info { background: var(--card); border: 1px solid var(--border); }
     @keyframes toast-in {
       from { opacity: 0; transform: translateY(10px) scale(0.96); }
       to { opacity: 1; transform: translateY(0) scale(1); }
     }
-    .path-link { word-break: break-all; }
+    .meta-inline { font-weight: normal; font-size: 12px; color: var(--muted-fg); }
+    .wechat-diagnostic .diagnostic-body { padding: 1rem; font-size: 13px; color: var(--muted-fg); }
+    .wechat-diagnostic .diagnostic-body p { margin: 0.5rem 0; }
+    .wechat-diagnostic .diagnostic-body code { background: var(--secondary); padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono); font-size: 12px; color: var(--accent); }
+    .wechat-diagnostic .path-list { margin-top: 0.5rem; max-height: 12rem; overflow: auto; font-family: var(--font-mono); font-size: 11px; line-height: 1.6; }
+
+    .tabs-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow); }
+    .tabs-row { display: flex; flex-wrap: wrap; gap: 0; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--secondary) 50%, transparent); overflow-x: auto; }
+    .tab-btn {
+      padding: 0.75rem 1rem;
+      border: none;
+      border-bottom: 2px solid transparent;
+      background: none;
+      color: var(--muted-fg);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+    }
+    .tab-btn:hover { color: var(--foreground); background: color-mix(in srgb, var(--secondary) 30%, transparent); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--card); }
+    .tab-panes { min-height: 200px; }
+    .tab-pane { display: none; padding: 0; }
+    .tab-pane.active { display: block; }
+    .tab-pane .category-body { border-bottom: none; }
   </style>
 </head>
-<body class="min-h-screen bg-background text-foreground font-sans text-sm antialiased">
-  <div class="max-w-4xl mx-auto px-5 py-6 sm:px-6 sm:py-8">
+<body>
+  <div class="layout">
     <!-- Header -->
-    <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 border-b border-border">
-      <h1 class="text-xl font-semibold tracking-tight text-foreground">C 盘清理</h1>
-      <div class="flex flex-wrap items-center gap-3">
-        <button type="button" id="btn-scan" class="inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-accent-foreground shadow-card transition-all hover:bg-accent/90 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 touch-target">
-          扫描 C 盘
-        </button>
-        <button type="button" id="btn-scan-empty" class="inline-flex items-center justify-center gap-2 rounded-lg bg-primary/90 border border-primary/50 px-4 py-2.5 text-sm font-medium text-primary-foreground transition-all hover:bg-primary active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 touch-target cursor-pointer">
-          扫描空文件夹
-        </button>
-        <button type="button" id="btn-delete" disabled class="inline-flex items-center justify-center gap-2 rounded-lg bg-destructive px-4 py-2.5 text-sm font-medium text-destructive-foreground shadow-card transition-all hover:bg-destructive/90 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 touch-target">
-          删除选中
-        </button>
-        <button type="button" id="btn-delete-empty" disabled class="inline-flex items-center justify-center gap-2 rounded-lg bg-primary/90 border border-primary/50 px-4 py-2.5 text-sm font-medium text-primary-foreground transition-all hover:bg-primary active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 touch-target cursor-pointer">
-          删除选中空文件夹
-        </button>
-        <button type="button" id="btn-delete-admin" disabled style="display: none;" class="inline-flex items-center justify-center gap-2 rounded-lg bg-primary/90 border border-primary/50 px-4 py-2.5 text-sm font-medium text-primary-foreground transition-all hover:bg-primary active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 touch-target cursor-pointer">
-          管理员权限删除
-        </button>
+    <header>
+      <h1>C 盘清理</h1>
+      <div class="actions">
+        <button type="button" id="btn-scan" class="btn btn-accent">扫描 C 盘</button>
+        <button type="button" id="btn-scan-empty" class="btn btn-primary">扫描空文件夹</button>
+        <button type="button" id="btn-delete" disabled class="btn btn-destructive">删除选中</button>
+        <button type="button" id="btn-delete-empty" disabled class="btn btn-primary">删除选中空文件夹</button>
+        <button type="button" id="btn-delete-admin" disabled style="display: none;" class="btn btn-primary">管理员权限删除</button>
       </div>
     </header>
 
     <!-- Summary cards -->
-    <div id="summary" class="hidden flex flex-wrap gap-4 mb-5">
-      <div class="rounded-xl border border-border bg-card px-4 py-3 min-w-[140px] shadow-card">
-        <p class="text-xs text-muted-foreground">可释放</p>
-        <p id="summary-size" class="text-base font-semibold font-mono text-foreground">—</p>
+    <div id="summary" class="summary">
+      <div class="summary-card">
+        <p class="label">可释放</p>
+        <p id="summary-size" class="value">—</p>
       </div>
-      <div class="rounded-xl border border-border bg-card px-4 py-3 min-w-[140px] shadow-card">
-        <p class="text-xs text-muted-foreground">文件数</p>
-        <p id="summary-count" class="text-base font-semibold font-mono text-foreground">—</p>
+      <div class="summary-card">
+        <p class="label">文件数</p>
+        <p id="summary-count" class="value">—</p>
       </div>
     </div>
 
@@ -115,15 +225,15 @@
     <div id="content"></div>
 
     <!-- 空文件夹区块 -->
-    <div id="empty-folders-section" class="hidden mt-6">
-      <div class="rounded-xl border border-border bg-card shadow-card overflow-hidden mb-4" data-category="empty_folders">
-        <div class="category-header flex items-center gap-3 px-4 py-3 bg-secondary/50 border-b border-border">
-          <input type="checkbox" id="empty-folders-header-check" aria-label="全选空文件夹" class="h-4 w-4 rounded border-border bg-card text-primary focus:ring-primary cursor-pointer" />
-          <span class="font-semibold text-foreground">空文件夹</span>
-          <span class="ml-auto text-xs text-muted-foreground" id="empty-folders-meta">0 项</span>
+    <div id="empty-folders-section" class="empty-section hidden">
+      <div class="category-block" data-category="empty_folders">
+        <div class="category-header">
+          <span class="toggle"></span>
+          <input type="checkbox" id="empty-folders-header-check" aria-label="全选空文件夹" />
+          <span class="name">空文件夹</span>
+          <span class="meta" id="empty-folders-meta">0 项</span>
         </div>
-        <div id="empty-folders-list" class="max-h-64 overflow-auto">
-          <!-- 动态填充 -->
+        <div id="empty-folders-list" class="empty-folders-list category-body">
         </div>
       </div>
     </div>
@@ -154,7 +264,7 @@
             ? "当前通过 " + window.location.origin + " 打开，请求会发往该地址。请改为在地址栏输入 <strong>http://127.0.0.1:8000/</strong> 打开本页面。"
             : "无法连接后端，请确认已在项目目录运行：<code class=\"rounded bg-card px-1.5 py-0.5 text-accent font-mono text-xs\">uvicorn backend.main:app --reload --port 8000</code>")
           : "您可能是双击打开的 HTML 文件（file://）。请先在终端运行 <code class=\"rounded bg-card px-1.5 py-0.5 text-accent font-mono text-xs\">uvicorn backend.main:app --reload --port 8000</code>，再在浏览器地址栏输入 <strong>http://127.0.0.1:8000/</strong> 打开本页面。";
-        contentEl.innerHTML = '<div class="rounded-xl border border-border bg-card p-6 text-center text-destructive"><div class="prose prose-invert max-w-none">' + msg + '<br><br>当前请求地址：<code class="rounded bg-secondary px-1.5 py-0.5 font-mono text-xs">' + API + "</code></div></div>";
+        contentEl.innerHTML = '<div class="state-error">' + msg + '<br><br>当前请求地址：<code class="code">' + API + "</code></div>";
       });
 
     const CATEGORY_NAMES = {
@@ -170,8 +280,7 @@
     function toast(msg, type) {
       type = type || "info";
       const el = document.createElement("div");
-      el.className = "toast fixed bottom-6 right-6 z-[1000] rounded-lg px-4 py-3 text-sm font-medium shadow-card " +
-        (type === "success" ? "bg-emerald-600 text-white" : type === "error" ? "bg-destructive text-destructive-foreground" : "bg-card border border-border text-foreground");
+      el.className = "toast " + (type === "success" ? "success" : type === "error" ? "error" : "info");
       el.textContent = msg;
       document.body.appendChild(el);
       setTimeout(() => el.remove(), 3500);
@@ -193,15 +302,15 @@
     }
 
     function renderEmpty() {
-      contentEl.innerHTML = '<div class="rounded-xl border border-border bg-card p-12 text-center text-muted-foreground">点击「扫描 C 盘」开始分析可清理文件</div>';
-      summaryEl.classList.add("hidden");
+      contentEl.innerHTML = '<div class="state-empty">点击「扫描 C 盘」开始分析可清理文件</div>';
+      summaryEl.classList.remove("show");
     }
 
     function setLoading(loading) {
       btnScan.disabled = loading;
       if (loading) {
-        contentEl.innerHTML = '<div class="rounded-xl border border-border bg-card p-12 text-center text-muted-foreground">正在扫描 C 盘，请稍候…</div>';
-        summaryEl.classList.add("hidden");
+        contentEl.innerHTML = '<div class="state-loading">正在扫描 C 盘，请稍候…</div>';
+        summaryEl.classList.remove("show");
       }
     }
 
@@ -243,72 +352,71 @@
       }
     }
 
+    function bindCategoryCollapse() {
+      document.body.addEventListener("click", function onCategoryHeaderClick(e) {
+        const header = e.target.closest(".category-header");
+        if (!header) return;
+        if (e.target.type === "checkbox" || e.target.tagName === "INPUT") return;
+        const block = header.closest(".category-block");
+        if (!block) return;
+        block.classList.toggle("collapsed");
+      }, { capture: false });
+    }
+
+    function bindTabSwitch() {
+      document.body.addEventListener("click", function(e) {
+        const btn = e.target.closest(".tab-btn");
+        if (!btn) return;
+        const wrap = btn.closest(".tabs-wrap");
+        if (!wrap) return;
+        const tabId = btn.getAttribute("data-tab");
+        wrap.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        wrap.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
+        btn.classList.add("active");
+        const pane = wrap.querySelector('.tab-pane[data-tab="' + tabId + '"]');
+        if (pane) pane.classList.add("active");
+      });
+    }
+
+    bindCategoryCollapse();
+    bindTabSwitch();
+
     function render(data, warningPaths) {
       warningPaths = warningPaths || new Set();
       const { categories, summary: sum } = data;
       if (!categories || Object.keys(categories).length === 0) {
-        contentEl.innerHTML = '<div class="rounded-xl border border-border bg-card p-12 text-center text-muted-foreground">未发现可清理文件</div>';
-        summaryEl.classList.add("hidden");
+        contentEl.innerHTML = '<div class="state-empty">未发现可清理文件</div>';
+        summaryEl.classList.remove("show");
         return;
       }
 
-      summaryEl.classList.remove("hidden");
+      summaryEl.classList.add("show");
       document.getElementById("summary-size").textContent = formatSize(sum.total_size_bytes);
       document.getElementById("summary-count").textContent = sum.total_count;
 
-      let html = "";
-      for (const [cat, items] of Object.entries(categories)) {
+      const catEntries = Object.entries(categories);
+      let tabsHtml = '<div class="tabs-row">';
+      let panesHtml = '<div class="tab-panes">';
+      catEntries.forEach(([cat], i) => {
         const name = CATEGORY_NAMES[cat] || cat;
-        const catSize = items.reduce((a, f) => a + f.size, 0);
-        const hint = cat === "remnants"
-          ? ' <span class="text-muted-foreground font-normal text-xs">（与注册表已安装列表对比，可能为残留目录，请确认后删除）</span>'
-          : cat === "large"
-            ? ' <span class="text-muted-foreground font-normal text-xs">（文档/下载/桌面等与软件系统无关，≥50MB，可按需删除）</span>'
-            : cat === "wechat_files"
-              ? ' <span class="text-muted-foreground font-normal text-xs">（FileStorage，聊天中收发的文件）</span>'
-              : cat === "wechat_cache"
-                ? ' <span class="text-muted-foreground font-normal text-xs">（图片/视频/表情等缓存，删除不影响聊天记录）</span>'
-                : "";
-        html += `
-          <div class="rounded-xl border border-border bg-card shadow-card overflow-hidden mb-4" data-category="${cat}">
-            <div class="category-header flex items-center gap-3 px-4 py-3 bg-secondary/50 border-b border-border cursor-pointer select-none hover:bg-secondary/70 transition-colors">
-              <input type="checkbox" aria-label="全选${name}" class="h-4 w-4 rounded border-border bg-card text-primary focus:ring-primary cursor-pointer" />
-              <span class="font-semibold text-foreground">${name}</span>${hint}
-              <span class="ml-auto text-xs text-muted-foreground">${items.length} 项 · ${formatSize(catSize)}</span>
-            </div>
-            <div class="overflow-x-auto">
-              <table class="file-table w-full border-collapse">
-                <thead>
-                  <tr class="border-b border-border">
-                    <th class="text-left py-2.5 px-4 w-10 font-medium text-muted-foreground text-xs"></th>
-                    <th class="text-left py-2.5 px-4 w-24 font-medium text-muted-foreground text-xs">大小</th>
-                    <th class="text-left py-2.5 px-4 font-medium text-muted-foreground text-xs">路径</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${items.map(f => {
-                    const warn = warningPaths.has(f.path);
-                    return `
-                    <tr class="border-b border-border/80 hover:bg-secondary/30 transition-colors">
-                      <td class="py-2 px-4 align-middle"><input type="checkbox" data-path="${esc(f.path)}" class="h-4 w-4 rounded border-border bg-card text-primary focus:ring-primary cursor-pointer" /></td>
-                      <td class="py-2 px-4 font-mono text-xs text-muted-foreground align-middle">${formatSize(f.size)}</td>
-                      <td class="py-2 px-4 align-middle">
-                        <div class="flex items-center gap-2 flex-wrap">
-                          <a class="path-link text-accent hover:underline font-mono text-xs cursor-pointer" href="#" data-path="${esc(f.path)}">${esc(f.path)}</a>
-                          ${warn ? '<span class="text-xs text-destructive bg-destructive/15 px-2 py-0.5 rounded">可能被占用，可用管理员权限删除</span>' : ''}
-                        </div>
-                      </td>
-                    </tr>
-                  `; }).join("")}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        `;
-      }
-      contentEl.innerHTML = html;
+        const items = categories[cat];
+        const count = items.length;
+        const isFirst = i === 0;
+        tabsHtml += `<button type="button" class="tab-btn ${isFirst ? 'active' : ''}" data-tab="${cat}">${name} (${count})</button>`;
+        panesHtml += `<div class="tab-pane ${isFirst ? 'active' : ''}" data-tab="${cat}">`;
+        panesHtml += `<div class="category-block" data-category="${cat}"><div class="category-header"><span class="toggle" aria-label="折叠/展开"></span><input type="checkbox" aria-label="全选${name}" /><span class="name">${name}</span><span class="meta">${items.length} 项 · ${formatSize(items.reduce((a, f) => a + f.size, 0))}</span></div><div class="category-body">`;
+        panesHtml += `<table class="file-table"><thead><tr><th></th><th>大小</th><th>路径</th></tr></thead><tbody>`;
+        items.forEach(f => {
+          const warn = warningPaths.has(f.path);
+          panesHtml += `<tr><td><input type="checkbox" data-path="${esc(f.path)}" /></td><td class="size">${formatSize(f.size)}</td><td><div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;"><a class="path-link" href="#" data-path="${esc(f.path)}">${esc(f.path)}</a>${warn ? '<span class="file-warning">可能被占用，可用管理员权限删除</span>' : ''}</div></td></tr>`;
+        });
+        panesHtml += '</tbody></table></div></div></div>';
+      });
+      panesHtml += '</div>';
+      tabsHtml += '</div>';
+      contentEl.innerHTML = '<div class="tabs-wrap">' + tabsHtml + panesHtml + '</div>';
 
-      Object.keys(categories).forEach(cat => bindCategoryCheckbox(cat));
+      catEntries.forEach(([cat]) => bindCategoryCheckbox(cat));
       contentEl.querySelectorAll(".path-link").forEach(a => {
         a.addEventListener("click", e => {
           e.preventDefault();
@@ -323,28 +431,36 @@
           .then(r => r.json())
           .then(d => {
             if (d.error) return;
-            const block = document.createElement("div");
-            block.className = "rounded-xl border border-border bg-card shadow-card overflow-hidden mb-4 wechat-diagnostic";
-            const reg = d.registry_path ? `注册表 FileSavePath：<code class="rounded bg-secondary px-1.5 py-0.5 text-accent font-mono text-xs">${esc(d.registry_path)}</code>` : "注册表 FileSavePath：未设置或无法读取";
+            const tabsWrap = contentEl.querySelector(".tabs-wrap");
+            if (!tabsWrap) return;
+            const tabsRow = tabsWrap.querySelector(".tabs-row");
+            const tabPanes = tabsWrap.querySelector(".tab-panes");
+            if (!tabsRow || !tabPanes) return;
+            const reg = d.registry_path ? `注册表 FileSavePath：<code>${esc(d.registry_path)}</code>` : "注册表 FileSavePath：未设置或无法读取";
             const found = (d.base_paths_found || []).length;
             const list = (d.checked_paths || []).slice(0, 30).map(p => `${p.exists ? "✓" : "✗"} ${esc(p.path)}`).join("<br>");
-            block.innerHTML = `
-              <div class="flex items-center gap-3 px-4 py-3 bg-secondary/50 border-b border-border">
-                <span class="font-semibold text-foreground">微信存储路径诊断</span>
-                <span class="ml-auto text-xs text-muted-foreground">未检测到微信传输文件/缓存时可参考</span>
+            const tabId = "wechat_diagnostic";
+            tabsRow.insertAdjacentHTML("beforeend", `<button type="button" class="tab-btn" data-tab="${tabId}">微信诊断</button>`);
+            tabPanes.insertAdjacentHTML("beforeend", `
+              <div class="tab-pane" data-tab="${tabId}">
+                <div class="category-block wechat-diagnostic">
+                  <div class="category-header">
+                    <span class="name">微信存储路径诊断</span>
+                    <span class="meta">未检测到微信传输文件/缓存时可参考</span>
+                  </div>
+                  <div class="diagnostic-body category-body">
+                    <p><strong>${reg}</strong></p>
+                    <p>已检查的路径中，存在且为目录的共 <strong>${found}</strong> 个。</p>
+                    <p>请打开微信 → 设置 → 文件管理，查看「文件存储」显示的路径是否在下列列表中。</p>
+                    <details>
+                      <summary style="cursor:pointer;color:var(--accent)">已检查的路径列表（前30项）</summary>
+                      <div class="path-list">${list}</div>
+                    </details>
+                    <p style="color:var(--accent);margin-top:0.75rem">若您的微信实际路径不在列表中，请将微信里显示的完整路径反馈以便支持。</p>
+                  </div>
+                </div>
               </div>
-              <div class="p-4 text-sm text-muted-foreground space-y-2">
-                <p><strong class="text-foreground">${reg}</strong></p>
-                <p>已检查的路径中，存在且为目录的共 <strong class="text-foreground">${found}</strong> 个。</p>
-                <p>请打开微信 → 设置 → 文件管理，查看「文件存储」显示的路径是否在下列列表中。</p>
-                <details>
-                  <summary class="cursor-pointer text-accent">已检查的路径列表（前30项）</summary>
-                  <div class="mt-2 max-h-48 overflow-auto font-mono text-xs leading-relaxed">${list}</div>
-                </details>
-                <p class="text-accent mt-3">若您的微信实际路径不在列表中，请将微信里显示的完整路径反馈以便支持。</p>
-              </div>
-            `;
-            contentEl.appendChild(block);
+            `);
           })
           .catch(() => {});
       }
@@ -362,9 +478,9 @@
       section.classList.remove("hidden");
       meta.textContent = paths.length + " 项";
       listEl.innerHTML = paths.map(p => `
-        <div class="flex items-center gap-3 px-4 py-2 border-b border-border/80 hover:bg-secondary/30 transition-colors">
-          <input type="checkbox" data-path="${esc(p)}" class="empty-folder-check h-4 w-4 rounded border-border bg-card text-primary focus:ring-primary cursor-pointer" />
-          <a class="path-link text-accent hover:underline font-mono text-xs cursor-pointer flex-1 min-w-0" href="#" data-path="${esc(p)}">${esc(p)}</a>
+        <div class="row">
+          <input type="checkbox" data-path="${esc(p)}" class="empty-folder-check" />
+          <a class="path-link flex-1 min-w-0" href="#" data-path="${esc(p)}">${esc(p)}</a>
         </div>
       `).join("");
       listEl.querySelectorAll(".path-link").forEach(a => {
@@ -400,7 +516,7 @@
             : (window.location.origin !== "http://127.0.0.1:8000" && window.location.origin !== "http://localhost:8000"
               ? "请通过 <strong>http://127.0.0.1:8000/</strong> 或 <strong>http://localhost:8000/</strong> 打开本页面，不要使用其他端口或直接打开 HTML 文件。"
               : "请确认已在项目目录运行：<code class=\"rounded bg-card px-1.5 py-0.5 text-accent font-mono text-xs\">uvicorn backend.main:app --reload --port 8000</code>");
-          contentEl.innerHTML = '<div class="rounded-xl border border-border bg-card p-6 text-destructive"><div class="prose prose-invert max-w-none">扫描失败，请确认：<br>1. 已在项目目录运行：<code class="rounded bg-card px-1.5 py-0.5 text-accent font-mono text-xs">uvicorn backend.main:app --reload --port 8000</code><br>2. 在浏览器地址栏输入 <a href="http://127.0.0.1:8000/" class="text-accent hover:underline">http://127.0.0.1:8000/</a> 打开本页面（不要双击 HTML 或使用其他端口）<br><br>' + tip + '<br><br>当前请求地址：<code class="rounded bg-secondary px-1.5 py-0.5 font-mono text-xs">' + API + '</code><br>错误信息：' + (err.message || "无法连接") + '</div></div>';
+          contentEl.innerHTML = '<div class="state-error">扫描失败，请确认：<br>1. 已在项目目录运行：<code class="code">uvicorn backend.main:app --reload --port 8000</code><br>2. 在浏览器地址栏输入 <a href="http://127.0.0.1:8000/" style="color:var(--accent)">http://127.0.0.1:8000/</a> 打开本页面（不要双击 HTML 或使用其他端口）<br><br>' + tip + '<br><br>当前请求地址：<code class="code">' + API + '</code><br>错误信息：' + (err.message || "无法连接") + '</div>';
         });
     });
 
@@ -439,7 +555,7 @@
             toast(`${skip.length} 个未删除：${msg}${skip.length > 1 ? " …" : ""}`, "info");
           }
           updateDeleteButton();
-          if (lastDeleteErrorPaths.length === 0) btnScan.click();
+          btnScan.click();
         })
         .catch(() => {
           toast("删除请求失败（请检查网络或后端）", "error");
@@ -469,7 +585,7 @@
           lastDeleteErrorPaths = errs.map(e => e.path);
           if (currentData) render(currentData, new Set(lastDeleteErrorPaths));
           updateDeleteButton();
-          if (lastDeleteErrorPaths.length === 0) btnScan.click();
+          btnScan.click();
         })
         .catch(() => {
           toast("管理员删除请求失败", "error");
