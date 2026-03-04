@@ -12,13 +12,26 @@
 
 ## 运行
 
+**方式一：一键启动（推荐）**
+
+双击项目根目录下的 **`start.bat`**，会自动启动服务并在浏览器打开 http://127.0.0.1:8000/。关闭弹出的「C盘清理-uvicorn」窗口即可停止服务。
+
+**方式二：命令行**
+
 ```bash
 # 在项目根目录 d:\clean_disk
 pip install -r requirements.txt
 uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-**在浏览器地址栏输入** http://localhost:8000/ 或 http://127.0.0.1:8000/ 打开页面（不要直接双击 `frontend/index.html`，否则会出现「Failed to fetch」）。
+**本机浏览器**：在地址栏输入 **http://127.0.0.1:8000/** 或 **http://localhost:8000/** 打开页面（不要直接双击 `frontend/index.html`，否则会出现「Failed to fetch」）。
+
+### 网页无法打开时请检查
+
+1. **本机访问**：必须用 **http://**（不是 https://），且带端口 **:8000**，例如 `http://127.0.0.1:8000/`。
+2. **终端是否报错**：若启动时报 `Address already in use`，说明 8000 端口被占用，可改用 `--port 8001` 后访问 http://127.0.0.1:8001/。
+3. **防火墙**：若用 `--host 0.0.0.0` 从手机/其他电脑访问本机 IP（如 http://192.168.1.100:8000/），需在 Windows 防火墙中放行 8000 端口，或暂时关闭防火墙测试。
+4. **仅本机使用**：若不需要局域网访问，可改为 `uvicorn backend.main:app --reload --port 8000`（不加 `--host 0.0.0.0`），然后只在本机用 http://127.0.0.1:8000/ 打开。
 
 ## 结构
 
